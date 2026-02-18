@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGridStore } from '../../store/gridStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Maximize2, Minimize2, Move, X } from 'lucide-react';
@@ -19,13 +19,16 @@ export const Preview: React.FC = () => {
 
     const markdown = gridToMarkdown(data, rows, cols, columnAlignments, mergedRows);
 
+    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+    const hasInitializedMobileDefault = useRef(false);
+
     // Drag/Resize State
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        if (mode === 'floating') {
+        if (!isMobile && mode === 'floating') {
             setIsDragging(true);
             setDragOffset({
                 x: e.clientX - rect.x,
@@ -35,9 +38,31 @@ export const Preview: React.FC = () => {
     };
 
     const handleResizeMouseDown = (e: React.MouseEvent) => {
+        if (isMobile) return;
         e.stopPropagation();
         setIsResizing(true);
     };
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(max-width: 767px)');
+        const onChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+
+        setIsMobile(mediaQuery.matches);
+        mediaQuery.addEventListener('change', onChange);
+        return () => mediaQuery.removeEventListener('change', onChange);
+    }, []);
+
+    useEffect(() => {
+        if (!isMobile) {
+            hasInitializedMobileDefault.current = false;
+            return;
+        }
+
+        if (!hasInitializedMobileDefault.current) {
+            hasInitializedMobileDefault.current = true;
+            setMode('hidden');
+        }
+    }, [isMobile, setMode]);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -53,7 +78,7 @@ export const Preview: React.FC = () => {
             setIsResizing(false);
         };
 
-        if (isDragging || isResizing) {
+        if (!isMobile && (isDragging || isResizing)) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
         }
@@ -61,7 +86,41 @@ export const Preview: React.FC = () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, isResizing, rect, dragOffset, setRect]);
+    }, [isDragging, isResizing, rect, dragOffset, setRect, isMobile]);
+
+    if (isMobile) {
+        const isOpen = mode !== 'hidden';
+
+        return (
+            <div
+                className={`fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full pointer-events-none'}`}
+                style={{ minHeight: 220, height: '40vh', maxHeight: '60vh' }}
+            >
+                <div className="h-full bg-white border-t border-gray-200 rounded-t-xl shadow-2xl flex flex-col overflow-hidden">
+                    <div className="flex items-center justify-between p-3 border-b bg-gray-50 sticky top-0 z-10">
+                        <span className="font-semibold text-sm text-gray-700">Live Preview</span>
+                        <button
+                            onClick={() => setMode('hidden')}
+                            className="p-1 hover:bg-red-100 text-red-600 rounded"
+                            title="Close"
+                            aria-label="Close live preview"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-0 bg-gray-50">
+                        <textarea
+                            className="w-full h-full p-4 font-mono text-xs text-gray-800 bg-gray-50 border-0 outline-none resize-none"
+                            value={markdown}
+                            readOnly
+                            spellCheck={false}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const style: React.CSSProperties = mode === 'floating' ? {
         position: 'fixed',
