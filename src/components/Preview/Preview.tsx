@@ -109,9 +109,9 @@ export const Preview: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-0 bg-gray-50">
+                    <div className="flex-1 overflow-hidden p-0 bg-gray-50">
                         <textarea
-                            className="w-full h-full p-4 font-mono text-xs text-gray-800 bg-gray-50 border-0 outline-none resize-none"
+                            className="w-full h-full overflow-auto p-4 font-mono text-xs text-gray-800 bg-gray-50 border-0 outline-none resize-none"
                             value={markdown}
                             readOnly
                             spellCheck={false}
@@ -184,9 +184,9 @@ export const Preview: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className="flex-1 overflow-auto p-0 bg-gray-50">
+            <div className="flex-1 overflow-hidden p-0 bg-gray-50">
                 <textarea
-                    className="w-full h-full p-4 font-mono text-xs text-gray-800 bg-gray-50 border-0 outline-none resize-none"
+                    className="w-full h-full overflow-auto p-4 font-mono text-xs text-gray-800 bg-gray-50 border-0 outline-none resize-none"
                     value={markdown}
                     readOnly
                     spellCheck={false}
